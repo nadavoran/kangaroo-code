@@ -14,44 +14,82 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      includeAssets: ["kangaroo.svg"],
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-cache",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
+      },
       manifest: {
-        name: "Kangaroo Kick",
-        short_name: "Kangaroo",
+        name: "Kangaroo Code - Learn Programming",
+        short_name: "Kangaroo Code",
+        description: "An educational game teaching children programming concepts through interactive kangaroo adventures",
         theme_color: "#00bcd4",
         background_color: "#e0f7fa",
         display: "standalone",
+        orientation: "any",
         scope: "/",
         start_url: "/",
+        categories: ["education", "games", "kids"],
+        lang: "en-US",
         icons: [
           {
-            src: "https://placehold.co/192x192/png?text=🦘",
+            src: "/kangaroo.svg",
+            sizes: "any",
+            type: "image/svg+xml",
+            purpose: "any maskable",
+          },
+          {
+            src: "https://placehold.co/192x192/00bcd4/ffffff/png?text=🦘",
             sizes: "192x192",
             type: "image/png",
+            purpose: "any",
           },
           {
-            src: "https://placehold.co/512x512/png?text=🦘",
+            src: "https://placehold.co/512x512/00bcd4/ffffff/png?text=🦘",
             sizes: "512x512",
             type: "image/png",
+            purpose: "any",
           },
           {
-            src: "https://placehold.co/192x192/png?text=🌴",
+            src: "https://placehold.co/192x192/00bcd4/ffffff/png?text=🦘",
             sizes: "192x192",
             type: "image/png",
+            purpose: "maskable",
           },
           {
-            src: "https://placehold.co/512x512/png?text=🌴",
+            src: "https://placehold.co/512x512/00bcd4/ffffff/png?text=🦘",
             sizes: "512x512",
             type: "image/png",
+            purpose: "maskable",
+          },
+        ],
+        screenshots: [
+          {
+            src: "https://placehold.co/540x720/e0f7fa/333333/png?text=Kangaroo+Code+Game",
+            sizes: "540x720",
+            type: "image/png",
+            form_factor: "narrow",
           },
           {
-            src: "https://placehold.co/192x192/png?text=🐨",
-            sizes: "192x192",
+            src: "https://placehold.co/1024x768/e0f7fa/333333/png?text=Kangaroo+Code+Desktop",
+            sizes: "1024x768",
             type: "image/png",
-          },
-          {
-            src: "https://placehold.co/512x512/png?text=🐨",
-            sizes: "512x512",
-            type: "image/png",
+            form_factor: "wide",
           },
         ],
       },

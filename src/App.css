@@ -12,8 +12,37 @@ body {
   display: flex;
   justify-content: center;
   min-height: 100vh;
+  /* Prevent pull-to-refresh on mobile */
+  overscroll-behavior-y: contain;
+  /* Smooth scrolling */
+  -webkit-overflow-scrolling: touch;
+  /* Safe area insets for notched devices */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
+/* Prevent text selection on UI elements */
+.buttons button,
+.actions button,
+.history-toggle,
+.level-card {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Better touch targets for mobile */
+@media (hover: none) and (pointer: coarse) {
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .command-item {
+    min-height: 40px;
+    padding: 4px 6px;
+  }
+}
 /* Style for kangaroo wrapper */
 .kangaroo {
   display: inline-block;
@@ -47,6 +76,7 @@ body {
   max-width: 500px;
   margin-left: auto;
   margin-right: auto;
+  width: 100%;
 }
 
 .cell {
@@ -58,11 +88,20 @@ body {
   font-size: 2.5rem;
   transition: all 0.2s;
   transform: scaleX(-1);
+  line-height: 1;
+  padding: 2px;
 }
 
 .cell.active {
   transform: scale(-1.05, 1.05);
   background: #f0f4f8aa;
+}
+
+/* Less aggressive scaling on mobile for better fit */
+@media (max-width: 768px) {
+  .cell.active {
+    transform: scale(-1.02, 1.02);
+  }
 }
 
 .cell.failed {
@@ -110,13 +149,41 @@ body {
   background: white;
   margin-bottom: 15px;
   border-radius: 8px;
-  padding: 10px;
+  padding: 0;
+  font-size: 1.2rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.command-display-wrapper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.command-spacer {
+  width: 50px;
+  flex-shrink: 0;
+}
+
+.command-list-center {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  justify-content: center;
   align-items: center;
-  font-size: 1.2rem;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.command-placeholder {
+  color: #999;
 }
 
 .command-item {
@@ -124,14 +191,17 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 2px 4px;
   border-radius: 6px;
   transition: all 0.2s;
-  cursor: grab;
   touch-action: none;
 }
 
-.command-item:active {
+.command-emoji {
+  cursor: grab;
+}
+
+.command-emoji:active {
   cursor: grabbing;
 }
 
@@ -402,6 +472,71 @@ body {
   margin-left: 5px;
 }
 
+/* Trash Zone Container */
+.trash-zone-container {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 50px;
+}
+
+/* Trash Zone */
+.trash-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 2px dashed #ccc;
+  border-radius: 6px;
+  background: #f5f5f5;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.trash-zone.trash-over {
+  border-color: #f44336;
+  background: #ffebee;
+  transform: scale(1.08);
+  box-shadow: 0 0 10px rgba(244, 67, 54, 0.3);
+}
+
+.trash-icon {
+  font-size: 1.3rem;
+  transition: transform 0.2s;
+  line-height: 1;
+}
+
+.trash-zone.trash-over .trash-icon {
+  transform: scale(1.2);
+  animation: shake-trash 0.4s;
+}
+
+.trash-text {
+  font-size: 0.55rem;
+  color: #f44336;
+  font-weight: bold;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+@keyframes shake-trash {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1.2);
+  }
+  25% {
+    transform: rotate(-8deg) scale(1.2);
+  }
+  50% {
+    transform: rotate(8deg) scale(1.2);
+  }
+  75% {
+    transform: rotate(-8deg) scale(1.2);
+  }
+}
+
 .score-display {
   margin-top: 20px;
   padding: 15px;
@@ -577,4 +712,473 @@ body {
   background: #ccc;
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+/* Mobile-first layout */
+.game-layout-mobile {
+  display: flex;
+  flex-direction: column;
+  max-width: 1200px;
+  width: 100%;
+  padding: 20px;
+  padding-bottom: 0;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Bottom collapsible history panel */
+.history-panel-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.15);
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  z-index: 1000;
+  transition: transform 0.3s ease-in-out;
+}
+
+.history-panel-bottom.collapsed {
+  transform: translateY(calc(100% - 60px));
+}
+
+.history-panel-bottom.expanded {
+  transform: translateY(0);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.history-toggle {
+  width: 100%;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  transition: all 0.2s;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.history-toggle:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b3fa0 100%);
+  transform: translateY(-2px);
+}
+
+.history-toggle:active {
+  transform: translateY(0);
+}
+
+.history-toggle-icon {
+  font-size: 1.2rem;
+  transition: transform 0.3s;
+}
+
+.history-toggle-text {
+  flex: 1;
+  text-align: center;
+}
+
+.history-content {
+  padding: 20px;
+  max-height: calc(70vh - 60px);
+  overflow-y: auto;
+}
+
+/* Add padding to bottom of game container to prevent overlap */
+.game-layout-mobile .game-container {
+  text-align: center;
+  padding-bottom: 80px; /* Space for collapsed history */
+}
+
+/* Desktop layout - side-by-side with always-visible history */
+@media (min-width: 1024px) {
+  .game-layout-mobile {
+    flex-direction: row;
+    gap: 20px;
+    padding-bottom: 20px;
+  }
+
+  .game-layout-mobile .game-container {
+    flex: 1;
+    max-width: 600px;
+    padding-bottom: 0;
+  }
+
+  .history-panel-bottom {
+    position: static;
+    transform: none !important;
+    max-height: 80vh;
+    width: 300px;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .history-panel-bottom.collapsed,
+  .history-panel-bottom.expanded {
+    transform: none !important;
+    max-height: 80vh;
+  }
+
+  .history-toggle {
+    display: none;
+  }
+
+  .history-content {
+    display: block !important;
+    max-height: none;
+    padding: 0;
+    overflow: visible;
+  }
+
+  /* Add a proper header for desktop */
+  .history-panel-bottom::before {
+    content: "📼 Replay History";
+    display: block;
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #333;
+    padding: 20px 20px 15px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0;
+  }
+
+  .history-empty {
+    padding: 20px;
+  }
+
+  .history-list {
+    padding: 20px;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .history-panel-bottom.expanded {
+    max-height: 60vh;
+  }
+
+  .history-content {
+    max-height: calc(60vh - 60px);
+  }
+}
+
+/* Mobile optimizations for better fit */
+@media (max-width: 768px) {
+  .game-layout-mobile {
+    padding: 10px;
+    padding-bottom: 0;
+  }
+
+  .grid {
+    max-width: 95vw;
+    gap: 3px;
+    padding: 6px;
+    margin-bottom: 15px;
+  }
+
+  .cell {
+    font-size: 1.6rem;
+    border-radius: 4px;
+    min-height: 0;
+    padding: 1px;
+    line-height: 0.9;
+  }
+
+  .game-container h1 {
+    font-size: 1.5rem;
+    margin: 10px 0;
+  }
+
+  .level-description {
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+  }
+
+  .command-display {
+    min-height: 35px;
+    padding: 0;
+    margin-bottom: 12px;
+    font-size: 1rem;
+    max-width: 85vw;
+  }
+
+  .command-display-wrapper {
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .command-spacer {
+    display: none;
+  }
+
+  .command-list-center {
+    width: 100%;
+    max-width: calc(100% - 80px);
+  }
+
+  .trash-zone-container {
+    width: auto;
+    align-self: center;
+  }
+
+  .trash-zone {
+    width: auto;
+    min-width: 45px;
+    padding: 5px 8px;
+  }
+
+  .trash-icon {
+    font-size: 1.2rem;
+  }
+
+  .trash-text {
+    font-size: 0.55rem;
+  }
+
+  .buttons button {
+    width: 50px;
+    height: 50px;
+    font-size: 1.3rem;
+    padding: 10px;
+  }
+
+  .actions button {
+    padding: 10px 18px;
+    font-size: 0.9rem;
+    width: auto;
+  }
+}
+
+/* Small mobile adjustments */
+@media (max-width: 480px) {
+  .game-layout-mobile {
+    padding: 8px;
+    padding-bottom: 0;
+  }
+
+  .history-panel-bottom.expanded {
+    max-height: 75vh;
+  }
+
+  .history-toggle {
+    font-size: 0.95rem;
+    padding: 12px 15px;
+  }
+
+  .grid {
+    max-width: calc(
+      85vw - env(safe-area-inset-right) - env(safe-area-inset-left)
+    );
+    gap: 2px;
+    padding: 5px;
+    margin-bottom: 12px;
+  }
+
+  .cell {
+    font-size: 1.4rem;
+    border-radius: 3px;
+    padding: 0;
+    line-height: 0.85;
+  }
+
+  .game-container h1 {
+    font-size: 1.3rem;
+    margin: 8px 0;
+  }
+
+  .level-description {
+    font-size: 0.8rem;
+    margin-bottom: 12px;
+  }
+
+  .command-display {
+    min-height: 32px;
+    padding: 0;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+    max-width: 85vw;
+  }
+
+  .trash-zone {
+    min-width: 40px;
+    padding: 4px 6px;
+  }
+
+  .trash-icon {
+    font-size: 1.1rem;
+  }
+
+  .trash-text {
+    font-size: 0.5rem;
+  }
+
+  .buttons {
+    gap: 3px;
+    margin-bottom: 12px;
+  }
+
+  .buttons button {
+    width: 45px;
+    height: 45px;
+    font-size: 1.2rem;
+    padding: 8px;
+  }
+
+  .row {
+    gap: 3px;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .actions button {
+    flex: 1 1 45%;
+    min-width: 100px;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+
+  .message {
+    font-size: 1rem;
+    margin-top: 12px;
+  }
+
+  .score-display {
+    padding: 12px;
+    margin-top: 15px;
+  }
+
+  .score-label {
+    font-size: 1rem;
+  }
+
+  .score-mistakes {
+    font-size: 0.9rem;
+  }
+
+  .score-hint {
+    font-size: 0.75rem;
+  }
+}
+
+/* Touch-specific optimizations */
+@media (hover: none) {
+  /* Better button feedback on touch */
+  button:active {
+    transform: scale(0.95);
+    opacity: 0.9;
+  }
+
+  /* Larger tap targets for commands */
+  .command-item {
+    padding: 4px 6px;
+  }
+
+  /* Prevent double-tap zoom */
+  * {
+    touch-action: manipulation;
+  }
+}
+
+/* iOS-specific fixes */
+@supports (-webkit-touch-callout: none) {
+  /* Prevent iOS zoom on input focus */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* Fix iOS safe area */
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .history-panel-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 10px);
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (orientation: landscape) and (max-height: 500px) {
+  .game-layout-mobile {
+    padding: 5px;
+  }
+
+  .grid {
+    max-width: 45vh;
+    margin-bottom: 10px;
+  }
+
+  .game-container h1 {
+    font-size: 1.2rem;
+    margin: 5px 0;
+  }
+
+  .level-description {
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+  }
+
+  .buttons button {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+
+  .history-panel-bottom.expanded {
+    max-height: 50vh;
+  }
+}
+
+/* Prevent content shifting during load */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Accessibility: Focus visible for keyboard users */
+button:focus-visible,
+.command-item:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Performance: GPU acceleration for animations */
+.cell,
+.command-item,
+.history-panel-bottom {
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

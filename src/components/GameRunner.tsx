@@ -7,6 +7,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
 } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
 import {
@@ -71,16 +72,18 @@ function SortableCommandItem({
       style={style}
       className={`command-item ${isSelected ? "selected" : ""}`}
       {...attributes}
-      {...listeners}
     >
       <span
         className={`command-emoji ${isExecuting ? "executing" : ""} ${
           isWasted ? "wasted" : ""
         }`}
+        {...listeners}
         onClick={(e) => {
-          e.stopPropagation();
-          if (!isRunning) onSelect();
+          if (!isRunning && !isDragging) {
+            onSelect();
+          }
         }}
+        style={{ cursor: isRunning ? "default" : "grab" }}
       >
         {getCommandEmoji(command)}
       </span>
@@ -96,6 +99,22 @@ function SortableCommandItem({
           ×
         </button>
       )}
+    </div>
+  );
+}
+
+function TrashZone({ isOver }: { isOver: boolean }) {
+  const { setNodeRef } = useDroppable({
+    id: "trash-zone",
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`trash-zone ${isOver ? "trash-over" : ""}`}
+    >
+      <span className="trash-icon">🗑️</span>
+      {isOver && <span className="trash-text">Drop to delete</span>}
     </div>
   );
 }
@@ -128,6 +147,8 @@ export function GameRunner({
   >([]);
   const [currentLevelSnapshot, setCurrentLevelSnapshot] =
     useState<LevelConfig>(level);
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
+  const [isDraggingOverTrash, setIsDraggingOverTrash] = useState(false);
 
   // Reset game when level changes (for HMR support)
   useEffect(() => {
@@ -416,10 +437,29 @@ export function GameRunner({
     })
   );
 
+  const handleDragOver = (event: { over: any }) => {
+    setIsDraggingOverTrash(event.over?.id === "trash-zone");
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setIsDraggingOverTrash(false);
 
-    if (over && active.id !== over.id) {
+    if (!over) return;
+
+    // Check if dropped on trash zone
+    if (over.id === "trash-zone") {
+      const indexToRemove = commands.findIndex(
+        (_, i) => `command-${i}` === active.id
+      );
+      if (indexToRemove !== -1) {
+        setCommands(commands.filter((_, i) => i !== indexToRemove));
+      }
+      return;
+    }
+
+    // Reorder commands if dropped on another command
+    if (active.id !== over.id) {
       const oldIndex = commands.findIndex(
         (_, i) => `command-${i}` === active.id
       );
@@ -430,7 +470,7 @@ export function GameRunner({
   };
 
   return (
-    <div className="game-layout">
+    <div className="game-layout-mobile">
       <div className="game-container">
         <h1>{flipKangaroos(level.name)}</h1>
         <p className="level-description">{flipKangaroos(level.description)}</p>
@@ -472,54 +512,71 @@ export function GameRunner({
 
         <div className="controls">
           <div className="command-display">
-            {commands.length === 0 ? (
-              "Add commands..."
-            ) : (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={commands.map((_, i) => `command-${i}`)}
-                  strategy={horizontalListSortingStrategy}
-                >
-                  {commands.map((c, i) => (
-                    <SortableCommandItem
-                      key={`command-${i}`}
-                      id={`command-${i}`}
-                      command={c}
-                      index={i}
-                      isExecuting={i === currentCommandIndex}
-                      isWasted={wastedCommands.includes(i)}
-                      isSelected={i === selectedCommandIndex}
-                      isRunning={isRunning}
-                      onSelect={() => setSelectedCommandIndex(i)}
-                      onRemove={() => removeCommand(i)}
-                      getCommandEmoji={getCommandEmoji}
-                    />
-                  ))}
-                </SortableContext>
-                <span className="command-count">
-                  ({commands.length}/{level.maxCommands})
-                  {selectedCommandIndex >= 0 && (
-                    <>
-                      <span className="replace-hint">
-                        {" "}
-                        - Click arrow to replace
-                      </span>
-                      <button
-                        className="cancel-replace-btn"
-                        onClick={() => setSelectedCommandIndex(-1)}
-                        title="Cancel replace mode"
-                      >
-                        ✕ Cancel
-                      </button>
-                    </>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver}
+            >
+              <div className="command-display-wrapper">
+                {/* Left spacer to balance the trash on the right */}
+                <div className="command-spacer"></div>
+                
+                <div className="command-list-center">
+                  {commands.length === 0 ? (
+                    <span className="command-placeholder">Add commands...</span>
+                  ) : (
+                    <SortableContext
+                      items={commands.map((_, i) => `command-${i}`)}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {commands.map((c, i) => (
+                        <SortableCommandItem
+                          key={`command-${i}`}
+                          id={`command-${i}`}
+                          command={c}
+                          index={i}
+                          isExecuting={i === currentCommandIndex}
+                          isWasted={wastedCommands.includes(i)}
+                          isSelected={i === selectedCommandIndex}
+                          isRunning={isRunning}
+                          onSelect={() => {
+                            console.log("+++++++++ select", i);
+                            setSelectedCommandIndex(i);
+                          }}
+                          onRemove={() => removeCommand(i)}
+                          getCommandEmoji={getCommandEmoji}
+                        />
+                      ))}
+                    </SortableContext>
                   )}
-                </span>
-              </DndContext>
-            )}
+                  <span className="command-count">
+                    ({commands.length}/{level.maxCommands})
+                    {selectedCommandIndex >= 0 && (
+                      <>
+                        <span className="replace-hint">
+                          {" "}
+                          - Click arrow to replace
+                        </span>
+                        <button
+                          className="cancel-replace-btn"
+                          onClick={() => setSelectedCommandIndex(-1)}
+                          title="Cancel replace mode"
+                        >
+                          ✕ Cancel
+                        </button>
+                      </>
+                    )}
+                  </span>
+                </div>
+                
+                {!isRunning && (
+                  <div className="trash-zone-container">
+                    <TrashZone isOver={isDraggingOverTrash} />
+                  </div>
+                )}
+              </div>
+            </DndContext>
           </div>
 
           <div className="buttons">
@@ -589,65 +646,85 @@ export function GameRunner({
         </div>
       </div>
 
-      {/* History Panel */}
-      <div className="history-panel">
-        <h2 className="history-title">📼 Replay History</h2>
-        {history.length === 0 ? (
-          <p className="history-empty">
-            No plays yet. Run your code to see history!
-          </p>
-        ) : (
-          <div className="history-list">
-            {history.map((entry) => (
-              <div
-                key={entry.id}
-                className={`history-entry ${
-                  entry.success ? "success-entry" : "fail-entry"
-                }`}
-              >
-                <div className="history-header">
-                  <span className="history-status">
-                    {entry.success ? "✅" : "❌"}
-                  </span>
-                  <span className="history-time">
-                    {entry.timestamp.toLocaleTimeString()}
-                  </span>
-                </div>
-                <div
-                  className="history-commands"
-                  onClick={() =>
-                    replayFromHistory(entry.commands, entry.obstacles)
-                  }
-                >
-                  {entry.commands.map((cmd, i) => (
-                    <span key={i} className="history-command-emoji">
-                      {getCommandEmoji(cmd)}
-                    </span>
-                  ))}
-                </div>
-                <div className="history-footer">
-                  <div className="history-stats">
-                    <span className="history-stat">
-                      {entry.commands.length} commands
-                    </span>
-                    {entry.mistakes > 0 && (
-                      <span className="history-mistakes">
-                        {entry.mistakes} mistakes
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    className="history-play-btn"
-                    onClick={(e) =>
-                      playFromHistory(entry.commands, entry.obstacles, e)
-                    }
-                    disabled={isRunning}
+      {/* History Panel - Collapsible at Bottom */}
+      <div
+        className={`history-panel-bottom ${
+          isHistoryExpanded ? "expanded" : "collapsed"
+        }`}
+      >
+        <button
+          className="history-toggle"
+          onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+          aria-label={isHistoryExpanded ? "Collapse history" : "Expand history"}
+        >
+          <span className="history-toggle-icon">
+            {isHistoryExpanded ? "▼" : "▲"}
+          </span>
+          <span className="history-toggle-text">
+            📼 Replay History {history.length > 0 && `(${history.length})`}
+          </span>
+        </button>
+
+        {isHistoryExpanded && (
+          <div className="history-content">
+            {history.length === 0 ? (
+              <p className="history-empty">
+                No plays yet. Run your code to see history!
+              </p>
+            ) : (
+              <div className="history-list">
+                {history.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className={`history-entry ${
+                      entry.success ? "success-entry" : "fail-entry"
+                    }`}
                   >
-                    ▶️ Play
-                  </button>
-                </div>
+                    <div className="history-header">
+                      <span className="history-status">
+                        {entry.success ? "✅" : "❌"}
+                      </span>
+                      <span className="history-time">
+                        {entry.timestamp.toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div
+                      className="history-commands"
+                      onClick={() =>
+                        replayFromHistory(entry.commands, entry.obstacles)
+                      }
+                    >
+                      {entry.commands.map((cmd, i) => (
+                        <span key={i} className="history-command-emoji">
+                          {getCommandEmoji(cmd)}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="history-footer">
+                      <div className="history-stats">
+                        <span className="history-stat">
+                          {entry.commands.length} commands
+                        </span>
+                        {entry.mistakes > 0 && (
+                          <span className="history-mistakes">
+                            {entry.mistakes} mistakes
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        className="history-play-btn"
+                        onClick={(e) =>
+                          playFromHistory(entry.commands, entry.obstacles, e)
+                        }
+                        disabled={isRunning}
+                      >
+                        ▶️ Play
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>
