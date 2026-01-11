@@ -71,13 +71,6 @@ function App() {
           ))}
         </div>
       </div>
-
-      <div className="add-level-hint">
-        <h3>Want to add more levels?</h3>
-        <p>
-          Create a new file in <code>src/levels/</code> and add it to the index!
-        </p>
-      </div>
     </div>
   );
 }
