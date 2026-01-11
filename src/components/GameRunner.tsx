@@ -9,7 +9,7 @@ import {
   useSensors,
   useDroppable,
 } from "@dnd-kit/core";
-import type { DragEndEvent } from "@dnd-kit/core";
+import type { DragEndEvent, Over } from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
@@ -62,7 +62,7 @@ function SortableCommandItem({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: transform ? transition : "none",
     opacity: isDragging ? 0.5 : 1,
   };
 
@@ -437,7 +437,7 @@ export function GameRunner({
     })
   );
 
-  const handleDragOver = (event: { over: any }) => {
+  const handleDragOver = (event: { over: Over | null }) => {
     setIsDraggingOverTrash(event.over?.id === "trash-zone");
   };
 
