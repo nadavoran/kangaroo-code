@@ -78,7 +78,7 @@ function SortableCommandItem({
           isWasted ? "wasted" : ""
         }`}
         {...listeners}
-        onClick={(e) => {
+        onClick={() => {
           if (!isRunning && !isDragging) {
             onSelect();
           }
@@ -521,7 +521,7 @@ export function GameRunner({
               <div className="command-display-wrapper">
                 {/* Left spacer to balance the trash on the right */}
                 <div className="command-spacer"></div>
-                
+
                 <div className="command-list-center">
                   {commands.length === 0 ? (
                     <span className="command-placeholder">Add commands...</span>
@@ -569,7 +569,7 @@ export function GameRunner({
                     )}
                   </span>
                 </div>
-                
+
                 {!isRunning && (
                   <div className="trash-zone-container">
                     <TrashZone isOver={isDraggingOverTrash} />
