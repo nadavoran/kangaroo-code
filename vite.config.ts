@@ -17,6 +17,9 @@ export default defineConfig({
       includeAssets: ["kangaroo.svg"],
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -37,7 +40,8 @@ export default defineConfig({
       manifest: {
         name: "Kangaroo Code - Learn Programming",
         short_name: "Kangaroo Code",
-        description: "An educational game teaching children programming concepts through interactive kangaroo adventures",
+        description:
+          "An educational game teaching children programming concepts through interactive kangaroo adventures",
         theme_color: "#00bcd4",
         background_color: "#e0f7fa",
         display: "standalone",
