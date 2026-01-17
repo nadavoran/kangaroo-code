@@ -1,6 +1,6 @@
 # 🦘 Kangaroo Code
 
-**Kangaroo Code** is a fun, Australian-themed educational game designed to introduce children (6+ years) to the fundamental logic of computer programming through interactive play.
+**Kangaroo Code** is a fun, Australian-themed educational game designed to introduce children (6+ years) to the fundamental logic of computer programming through interactive play. Available as a Progressive Web App (PWA) that works offline on all devices!
 
 ![Kangaroo Code](public/kangaroo.svg)
 
@@ -20,25 +20,50 @@ Instead of moving the Kangaroo directly with a joystick, players must **write a 
 - **Debugging:** Identifying which specific command caused a "crash" or missed goal
 - **Optimization:** Finding the most efficient path with the fewest commands
 - **Pattern Recognition:** Understanding repeatable strategies across different puzzles
+- **Loops (Optional):** Introducing repetition with the Repeat block feature
 
 ---
 
 ## 🎮 How to Play
 
-1. **Select a Level:** Choose from 7 different levels with varying difficulty
-2. **Analyze the Grid:** Look at where the Kangaroo 🦘 and the goal are located
-3. **Build Your Program:** Click the arrow buttons (⬆️, ⬇️, ⬅️, ➡️) to add commands
+1. **Enable Loop Mode (Optional):** Toggle the Loop Mode switch on the main menu to enable advanced Repeat blocks
+2. **Select a Level:** Choose from 7 different levels with varying difficulty
+3. **Analyze the Grid:** 
+   - Look at where the Kangaroo 🦘 and the goal are located
+   - Coordinate numbers appear on the edges (like a chess board!)
+4. **Build Your Program:** 
+   - Click the arrow buttons (⬆️, ⬇️, ⬅️, ➡️) to add directional commands
+   - **Loop Mode**: Click **🔁 Repeat** to create loop blocks (e.g., "5×➡️" = move right 5 times)
    - Commands appear in the order you add them
-   - You can drag-and-drop to reorder commands
+   - **Drag & drop** to reorder commands
    - Click a command to select it, then click an arrow to replace it
-   - Hover over a command to see the remove (×) button
-4. **Avoid Obstacles:** Make sure your path doesn't land on obstacles
-5. **Run the Code:** Press the **▶️ RUN** button and watch the Kangaroo execute your instructions
-6. **Review Results:** 
+   - **Drag to trash** 🗑️ or click the remove (×) button to delete
+5. **Avoid Obstacles:** Make sure your path doesn't land on obstacles
+6. **Run the Code:** Press the large **▶️ RUN** button and watch the Kangaroo execute your instructions
+7. **Review Results:** 
    - ✅ Success: You reached the goal!
    - ❌ Failed: Hit an obstacle or missed the goal
-   - Red-highlighted commands show wasted moves
-7. **Iterate:** Press **🔄 RESET** to clear your commands and try again
+   - Red-highlighted commands show wasted moves (in both command list and history)
+8. **Iterate:** Press **🔄 RESET** to clear your commands and try again
+9. **Navigate:** Press **⬅️ BACK** to return to level selection (uses browser back button)
+
+---
+
+## ✨ Feature Highlights
+
+### 🎯 Core Features
+- 🦘 **7 Progressive Levels** - From simple to complex challenges
+- 🔁 **Loop Mode** - Optional repeat blocks for advanced learning
+- 📊 **History Panel** - Track all attempts with full replay capability
+- 🗑️ **Drag to Delete** - Intuitive trash zone for removing commands
+- 📍 **Grid Coordinates** - Chess-board style numbering system
+- 🔄 **Random Levels** - Infinite practice with procedural generation
+- 💾 **Offline Mode** - Full PWA with offline support
+- 🎨 **Beautiful UI** - Modern gradients and smooth animations
+- 📱 **Mobile First** - Optimized for touch devices
+- ⌨️ **Keyboard Support** - Full keyboard navigation
+- 🔙 **Browser Back** - Native browser navigation integration
+- 🎯 **Smart Layout** - Prominent RUN button, organized actions
 
 ---
 
@@ -83,19 +108,49 @@ Instead of moving the Kangaroo directly with a joystick, players must **write a 
 
 ### 🎨 Interactive Features
 
-- **Drag & Drop:** Reorder commands by dragging them
-- **Replace Mode:** Click a command to select it, then click an arrow to replace
-- **Visual Feedback:** 
-  - Highlighted command during execution
-  - Green success animation
+#### Command Management
+- **Drag & Drop:** Reorder commands by dragging them anywhere in the sequence
+- **Drag to Delete:** Drag a command to the trash zone 🗑️ to remove it
+- **Replace Mode:** Click a command to select it (pulsing blue highlight), then click an arrow to replace
+- **Select & Replace:** Selected commands can be swapped with a single click
+
+#### Loop System (Toggle On/Off)
+- **Loop Mode Toggle:** Beautiful animated switch on the main menu
+- **Repeat Blocks:** Create loops like "3×⬆️" instead of "⬆️⬆️⬆️"
+- **Interactive Modal:** 
+  - Select repeat count (2-10)
+  - Choose direction with visual buttons
+  - Preview: Shows as "count×direction" (e.g., "5×➡️")
+- **Smart Execution:** Loops execute step-by-step with proper animation
+
+#### Visual Feedback
+- **Grid Coordinates:** Chess-board style numbers on edges for easy reference
+- **Command Highlighting:** 
+  - Executing command pulses and scales during runtime
+  - Selected commands have blue pulsing border
+  - Wasted commands marked with red background
+- **Animations:**
+  - Green success celebration with scaling and rotation
   - Red failure shake
-  - Wasted commands marked in red background
-- **Score Tracking:** Counts mistakes (wasted moves)
-- **Replay History:** 
-  - All attempts are saved
-  - Click on a previous attempt to load those commands
-  - Click "Play" to watch a replay
+  - Smooth command transitions
+  - Kangaroo flips horizontally for authentic Australian feel!
+
+#### Scoring & History
+- **Score Tracking:** Counts mistakes (wasted moves that had no effect)
+- **Replay History Panel:** 
+  - Collapsible bottom drawer (mobile) or side panel (desktop)
+  - All attempts saved with timestamp
+  - Success/failure indicators (✅/❌)
+  - Shows exact commands used
+  - **Wasted commands highlighted** in red in history
+  - Click to load previous attempt
+  - Click "▶️ Play" to watch automatic replay
   - History preserves exact obstacle layouts for random levels
+
+#### Navigation
+- **Browser Back Button Support:** Navigate back from levels using browser/device back button
+- **Exit Warning:** Warns before leaving the game from main menu
+- **History State:** Full browser history integration with proper state management
 
 ### 🔄 Random Level Generation
 
@@ -107,6 +162,38 @@ Instead of moving the Kangaroo directly with a joystick, players must **write a 
 
 ---
 
+## 🎨 UI/UX Features
+
+### Modern Design
+- **Gradient Buttons:** Beautiful color gradients for visual appeal
+- **Smooth Animations:** CSS3 transitions and transforms throughout
+- **Responsive Layout:** Optimized for all screen sizes (mobile-first design)
+- **Touch-Friendly:** Large tap targets (44px minimum) for mobile devices
+- **Visual Hierarchy:** Clear button sizing (large RUN button, smaller secondary actions)
+
+### Accessibility
+- **Keyboard Navigation:** Full keyboard support
+- **Focus Indicators:** Visible focus states for keyboard users
+- **High Contrast:** Good color contrast ratios
+- **Touch Targets:** Proper spacing between interactive elements
+- **Reduced Motion:** Respects `prefers-reduced-motion` setting
+
+### Mobile Optimizations
+- **Adaptive Layout:** Same layout structure across all screen sizes
+- **Safe Areas:** Respects device notches and rounded corners
+- **Pull-to-Refresh:** Prevented for app-like feel
+- **Viewport Fit:** Covers full screen on modern devices
+- **Collapsible History:** Bottom drawer on mobile, side panel on desktop
+
+### Visual Feedback
+- **Button States:** Hover, active, disabled, and focus states
+- **Loading States:** Clear indication when code is running
+- **Success/Failure:** Distinct animations for different outcomes
+- **Command Execution:** Real-time visualization of program execution
+- **Mistake Highlighting:** Visual indicators for debugging
+
+---
+
 ## 🛠️ Tech Stack
 
 This app is built using modern web technologies:
@@ -115,11 +202,20 @@ This app is built using modern web technologies:
 - **React 18** with TypeScript
 - **Vite** for fast development and building
 - **@dnd-kit** for drag-and-drop functionality
-- **CSS3** with custom animations
+- **CSS3** with custom animations and transitions
+- **Progressive Web App (PWA)** with offline support
+
+### PWA Features
+- **Installable:** Add to home screen on mobile and desktop
+- **Offline-First:** Works without internet connection
+- **App-Like Experience:** Full-screen mode, splash screen
+- **Optimized Caching:** Fast load times with service worker
+- **Cross-Platform:** iOS, Android, Windows, macOS, Linux
 
 ### Algorithms
 - **BFS (Breadth-First Search)** for path validation
 - **Random generation** with solvability guarantees
+- **History API** for browser navigation integration
 
 ### Code Structure
 ```
@@ -143,6 +239,28 @@ src/
 ├── App.css                  # Styles
 └── main.tsx                 # Entry point
 ```
+
+---
+
+## 📱 Browser & Device Support
+
+### Supported Browsers
+- ✅ **Chrome/Edge** (recommended) - Full PWA support
+- ✅ **Safari** (iOS/macOS) - Full PWA support
+- ✅ **Firefox** - Works great, limited PWA features
+- ✅ **Samsung Internet** - Full Android PWA support
+
+### Supported Devices
+- 📱 **Smartphones** (iOS 12+, Android 5+)
+- 📱 **Tablets** (iPad, Android tablets)
+- 💻 **Desktop** (Windows, macOS, Linux)
+- 🖥️ **Chromebooks** - Perfect for classroom use!
+
+### Screen Sizes
+- Optimized for 320px to 4K displays
+- Responsive breakpoints at 480px, 768px, 1024px
+- Works in portrait and landscape orientations
+- Adapts to touch and mouse input
 
 ---
 
@@ -186,16 +304,39 @@ yarn build
 
 The built files will be in the `dist/` directory.
 
+### PWA Installation
+
+After deploying, users can install the app:
+
+**On Mobile (iOS/Android):**
+1. Open in Safari (iOS) or Chrome (Android)
+2. Tap the share/menu button
+3. Select "Add to Home Screen"
+4. The app will launch like a native app!
+
+**On Desktop (Chrome/Edge):**
+1. Click the install icon in the address bar
+2. Or go to Menu → Install Kangaroo Code
+3. The app will open in its own window!
+
+**Offline Support:**
+- Once installed, works completely offline
+- All levels, animations, and features available
+- Perfect for areas with poor connectivity
+
 ---
 
 ## 🎓 Educational Value
 
 ### For Children
-- **Visual Learning:** See code execution in real-time
-- **Immediate Feedback:** Understand what went wrong and try again
+- **Visual Learning:** See code execution in real-time with smooth animations
+- **Immediate Feedback:** Understand what went wrong and try again instantly
 - **Progressive Difficulty:** Start easy, build confidence, tackle harder challenges
 - **Problem-Solving:** Develop critical thinking and planning skills
 - **Persistence:** Learn that debugging and iteration are part of programming
+- **Loop Introduction:** Optional loop mode introduces the concept of repetition
+- **Coordinate System:** Learn X,Y coordinates through grid numbering
+- **Spatial Reasoning:** Develop mental mapping and navigation skills
 
 ### For Educators
 - **Unplugged Computing:** Introduces programming without syntax complexity
@@ -203,6 +344,10 @@ The built files will be in the `dist/` directory.
 - **Assessment Tool:** History feature shows student attempts and strategies
 - **Differentiation:** Random levels provide unlimited practice at each difficulty
 - **STEAM Integration:** Combines logic, spatial reasoning, and computational thinking
+- **Offline Access:** Install as PWA for classroom use without internet
+- **Loop Curriculum:** Toggle loops on/off to match lesson plans
+- **Progress Tracking:** History panel shows learning progression
+- **Mistake Analysis:** Wasted commands highlight inefficient thinking patterns
 
 ---
 
@@ -259,14 +404,33 @@ See `level4.ts` through `level7.ts` for examples of random level generation with
 
 Contributions are welcome! Areas for improvement:
 
-- Additional level designs
-- New obstacle types
-- Sound effects
-- Animation improvements
-- Accessibility enhancements
-- Localization/translations
-- Tutorial mode
+### Implemented Features ✅
+- ✅ Drag-and-drop command reordering
+- ✅ Drag-to-delete with trash zone
+- ✅ Loop/Repeat blocks (toggleable)
+- ✅ History panel with replay
+- ✅ Wasted command highlighting
+- ✅ Browser back button support
+- ✅ Grid coordinate numbers
+- ✅ Progressive Web App (PWA)
+- ✅ Offline support
+- ✅ Mobile-optimized layout
+- ✅ Random level generation
+- ✅ Beautiful animations
+
+### Future Enhancements 🚀
+- Sound effects and background music
+- Additional level themes
+- Tutorial/onboarding mode
 - Achievement system
+- Leaderboards (local/global)
+- More loop types (while, for)
+- If/else conditional blocks
+- Variable/function concepts
+- Localization/translations
+- Accessibility enhancements (screen reader support)
+- Level editor/creator mode
+- Share custom levels
 
 ---
 
