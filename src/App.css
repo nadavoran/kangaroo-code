@@ -583,7 +583,7 @@ body {
   position: absolute;
   height: 32px;
   width: 32px;
-  left: 4px;
+  left: 1px;
   bottom: 1px;
   background: white;
   border-radius: 50%;
@@ -593,9 +593,9 @@ body {
 
 .toggle-icon {
   position: absolute;
-  font-size: 1.2rem;
+  font-size: 1rem;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  left: 9px;
+  left: 7px;
   line-height: 1;
   z-index: 1;
 }
@@ -612,7 +612,7 @@ body {
 
 .toggle-switch input:checked + .toggle-slider .toggle-icon {
   left: auto;
-  right: 9px;
+  right: 7px;
   transform: rotate(360deg);
 }
 
@@ -1463,11 +1463,11 @@ body {
   }
 
   .toggle-switch input:checked + .toggle-slider::before {
-    transform: translateX(34px);
+    transform: translateX(39px);
   }
 
   .toggle-icon {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 
   .loop-toggle-text {
