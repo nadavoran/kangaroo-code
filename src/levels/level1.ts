@@ -4,7 +4,7 @@ export const level1 = (): LevelConfig => ({
   id: 1,
   name: "🦘 Level 1: Kangaroo Kick",
   description: "Help the kangaroo reach the soccer ball!",
-  gridSize: 2,
+  gridSize: 3,
   initialPlayer: { x: 0, y: 0 },
   goal: { x: 2, y: 2 },
   playerEmoji: "🦘",

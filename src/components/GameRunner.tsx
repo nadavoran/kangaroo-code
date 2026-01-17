@@ -733,14 +733,14 @@ export function GameRunner({
           </div>
 
           <div className="actions">
-            <div className="actions-primary">
-              <button
-                className="run-btn"
-                onClick={() => runCode(false)}
-                disabled={isRunning || commands.length === 0}
-              >
-                ▶️ RUN
-              </button>
+            <button
+              className="run-btn"
+              onClick={() => runCode(false)}
+              disabled={isRunning || commands.length === 0}
+            >
+              ▶️ RUN
+            </button>
+            <div className="actions-right">
               <button
                 className="reset-btn"
                 onClick={resetGame}
@@ -748,6 +748,15 @@ export function GameRunner({
               >
                 🔄 RESET
               </button>
+              {onBack && (
+                <button
+                  className="back-btn"
+                  onClick={onBack}
+                  disabled={isRunning}
+                >
+                  ⬅️ BACK
+                </button>
+              )}
               {level.isRandom && (
                 <button
                   className="next-btn"
@@ -758,17 +767,6 @@ export function GameRunner({
                 </button>
               )}
             </div>
-            {onBack && (
-              <div className="actions-secondary">
-                <button
-                  className="back-btn"
-                  onClick={onBack}
-                  disabled={isRunning}
-                >
-                  ⬅️ BACK
-                </button>
-              </div>
-            )}
           </div>
 
           {message && <div className="message">{flipKangaroos(message)}</div>}

@@ -55,7 +55,7 @@ export default defineConfig({
             src: "/kangaroo.svg",
             sizes: "any",
             type: "image/svg+xml",
-            purpose: "any maskable",
+            purpose: "any",
           },
           {
             src: "https://placehold.co/192x192/e0f7fa/00bcd4/png?text=🦘",
@@ -68,6 +68,12 @@ export default defineConfig({
             sizes: "512x512",
             type: "image/png",
             purpose: "any",
+          },
+          {
+            src: "/kangaroo.svg",
+            sizes: "any",
+            type: "image/svg+xml",
+            purpose: "maskable",
           },
           {
             src: "https://placehold.co/192x192/e0f7fa/00bcd4/png?text=🦘",
