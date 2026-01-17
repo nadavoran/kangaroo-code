@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
-import type { Command, LevelConfig, Position } from "../types/game.types";
+import type {
+  Command,
+  Direction,
+  LevelConfig,
+  Position,
+} from "../types/game.types";
 import {
   DndContext,
   closestCenter,
@@ -22,6 +27,7 @@ import "../App.css";
 
 interface GameRunnerProps {
   level: LevelConfig;
+  loopMode?: boolean;
   onLevelComplete?: () => void;
   onBack?: () => void;
   onNextLevel?: () => void;
@@ -37,7 +43,7 @@ interface SortableCommandItemProps {
   isRunning: boolean;
   onSelect: () => void;
   onRemove: () => void;
-  getCommandEmoji: (cmd: Command) => string;
+  getCommandEmoji: (cmd: Command) => React.ReactNode;
 }
 
 function SortableCommandItem({
@@ -121,6 +127,7 @@ function TrashZone({ isOver }: { isOver: boolean }) {
 
 export function GameRunner({
   level,
+  loopMode = false,
   onLevelComplete,
   onBack,
   onNextLevel,
@@ -141,6 +148,7 @@ export function GameRunner({
       commands: Command[];
       success: boolean;
       mistakes: number;
+      wastedIndexes: number[];
       timestamp: Date;
       obstacles?: typeof level.obstacles;
     }>
@@ -149,6 +157,9 @@ export function GameRunner({
     useState<LevelConfig>(level);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
   const [isDraggingOverTrash, setIsDraggingOverTrash] = useState(false);
+  const [showRepeatModal, setShowRepeatModal] = useState(false);
+  const [repeatCount, setRepeatCount] = useState(2);
+  const [repeatDirection, setRepeatDirection] = useState<Direction>("Right");
 
   // Reset game when level changes (for HMR support)
   useEffect(() => {
@@ -236,59 +247,128 @@ export function GameRunner({
       const cmd = commands[i];
       setCurrentCommandIndex(i);
 
-      let nextX = currentX;
-      let nextY = currentY;
+      // Handle repeat commands
+      if (typeof cmd === "object" && cmd.type === "Repeat") {
+        const repeatCount = cmd.count;
+        const direction = cmd.command;
 
-      // Calculate next position (use currentLevelSnapshot for correct grid size)
-      if (cmd === "Up" && currentY > 0) nextY--;
-      if (cmd === "Down" && currentY < currentLevelSnapshot.gridSize - 1)
-        nextY++;
-      if (cmd === "Left" && currentX > 0) nextX--;
-      if (cmd === "Right" && currentX < currentLevelSnapshot.gridSize - 1)
-        nextX++;
+        for (let r = 0; r < repeatCount; r++) {
+          let nextX = currentX;
+          let nextY = currentY;
 
-      // Check if the command had no effect (wasted action)
-      if (nextX === currentX && nextY === currentY) {
-        mistakeCount++;
-        wastedIndexes.push(i);
-        // Mark as wasted immediately during execution
-        setWastedCommands([...wastedIndexes]);
-        setMistakes(mistakeCount);
-      }
+          // Calculate next position for the repeated direction
+          if (direction === "Up" && currentY > 0) nextY--;
+          if (
+            direction === "Down" &&
+            currentY < currentLevelSnapshot.gridSize - 1
+          )
+            nextY++;
+          if (direction === "Left" && currentX > 0) nextX--;
+          if (
+            direction === "Right" &&
+            currentX < currentLevelSnapshot.gridSize - 1
+          )
+            nextX++;
 
-      // Check if the next position has an obstacle
-      if (checkCollision(nextX, nextY)) {
-        setMessage("Oops! Hit an obstacle! Try again. 💥");
-        setHasFailed(true);
-        setIsRunning(false);
-        setCurrentCommandIndex(-1);
-        setMistakes(mistakeCount);
-        setWastedCommands(wastedIndexes);
+          // Check if the move had no effect (wasted action)
+          if (nextX === currentX && nextY === currentY) {
+            mistakeCount++;
+            wastedIndexes.push(i);
+            setWastedCommands([...wastedIndexes]);
+            setMistakes(mistakeCount);
+            break; // Stop repeating if we can't move
+          }
 
-        // Add to history when hitting obstacle
-        if (!skipHistory) {
-          setHistory((prev) => [
-            {
-              id: Date.now(),
-              commands: [...commands],
-              success: false,
-              mistakes: mistakeCount,
-              timestamp: new Date(),
-              obstacles: currentLevelSnapshot.obstacles
-                ? JSON.parse(JSON.stringify(currentLevelSnapshot.obstacles))
-                : undefined,
-            },
-            ...prev,
-          ]);
+          // Check if the next position has an obstacle
+          if (checkCollision(nextX, nextY)) {
+            setMessage("Oops! Hit an obstacle! Try again. 💥");
+            setHasFailed(true);
+            setIsRunning(false);
+            setCurrentCommandIndex(-1);
+            setMistakes(mistakeCount);
+            setWastedCommands(wastedIndexes);
+
+            if (!skipHistory) {
+              setHistory((prev) => [
+                {
+                  id: Date.now(),
+                  commands: [...commands],
+                  success: false,
+                  mistakes: mistakeCount,
+                  wastedIndexes: [...wastedIndexes],
+                  timestamp: new Date(),
+                  obstacles: currentLevelSnapshot.obstacles
+                    ? JSON.parse(JSON.stringify(currentLevelSnapshot.obstacles))
+                    : undefined,
+                },
+                ...prev,
+              ]);
+            }
+            return;
+          }
+
+          currentX = nextX;
+          currentY = nextY;
+          setPlayerPos({ x: currentX, y: currentY });
+          await new Promise((r) => setTimeout(r, 500));
         }
-        return;
+      } else {
+        // Handle regular directional commands
+        let nextX = currentX;
+        let nextY = currentY;
+
+        // Calculate next position (use currentLevelSnapshot for correct grid size)
+        if (cmd === "Up" && currentY > 0) nextY--;
+        if (cmd === "Down" && currentY < currentLevelSnapshot.gridSize - 1)
+          nextY++;
+        if (cmd === "Left" && currentX > 0) nextX--;
+        if (cmd === "Right" && currentX < currentLevelSnapshot.gridSize - 1)
+          nextX++;
+
+        // Check if the command had no effect (wasted action)
+        if (nextX === currentX && nextY === currentY) {
+          mistakeCount++;
+          wastedIndexes.push(i);
+          // Mark as wasted immediately during execution
+          setWastedCommands([...wastedIndexes]);
+          setMistakes(mistakeCount);
+        }
+
+        // Check if the next position has an obstacle
+        if (checkCollision(nextX, nextY)) {
+          setMessage("Oops! Hit an obstacle! Try again. 💥");
+          setHasFailed(true);
+          setIsRunning(false);
+          setCurrentCommandIndex(-1);
+          setMistakes(mistakeCount);
+          setWastedCommands(wastedIndexes);
+
+          // Add to history when hitting obstacle
+          if (!skipHistory) {
+            setHistory((prev) => [
+              {
+                id: Date.now(),
+                commands: [...commands],
+                success: false,
+                mistakes: mistakeCount,
+                wastedIndexes: [...wastedIndexes],
+                timestamp: new Date(),
+                obstacles: currentLevelSnapshot.obstacles
+                  ? JSON.parse(JSON.stringify(currentLevelSnapshot.obstacles))
+                  : undefined,
+              },
+              ...prev,
+            ]);
+          }
+          return;
+        }
+
+        currentX = nextX;
+        currentY = nextY;
+
+        setPlayerPos({ x: currentX, y: currentY });
+        await new Promise((r) => setTimeout(r, 500));
       }
-
-      currentX = nextX;
-      currentY = nextY;
-
-      setPlayerPos({ x: currentX, y: currentY });
-      await new Promise((r) => setTimeout(r, 500));
     }
 
     setCurrentCommandIndex(-1);
@@ -322,6 +402,7 @@ export function GameRunner({
           commands: [...commands],
           success,
           mistakes: mistakeCount,
+          wastedIndexes: [...wastedIndexes],
           timestamp: new Date(),
           obstacles: currentLevelSnapshot.obstacles
             ? JSON.parse(JSON.stringify(currentLevelSnapshot.obstacles))
@@ -334,7 +415,24 @@ export function GameRunner({
     setIsRunning(false);
   };
 
-  const getCommandEmoji = (cmd: Command): string => {
+  const getCommandEmoji = (cmd: Command): React.ReactNode => {
+    if (typeof cmd === "object" && cmd.type === "Repeat") {
+      const directionEmoji =
+        cmd.command === "Up"
+          ? "⬆️"
+          : cmd.command === "Down"
+          ? "⬇️"
+          : cmd.command === "Left"
+          ? "⬅️"
+          : "➡️";
+      return (
+        <>
+          <span className="command-emoji-count">{cmd.count}×</span>
+          {directionEmoji}
+        </>
+      );
+    }
+
     switch (cmd) {
       case "Up":
         return "⬆️";
@@ -344,6 +442,8 @@ export function GameRunner({
         return "⬅️";
       case "Right":
         return "➡️";
+      default:
+        return "❓";
     }
   };
 
@@ -475,39 +575,67 @@ export function GameRunner({
         <h1>{flipKangaroos(level.name)}</h1>
         <p className="level-description">{flipKangaroos(level.description)}</p>
 
-        <div
-          className="grid"
-          style={{
-            gridTemplateColumns: `repeat(${currentLevelSnapshot.gridSize}, 1fr)`,
-          }}
-        >
-          {Array.from({
-            length:
-              currentLevelSnapshot.gridSize * currentLevelSnapshot.gridSize,
-          }).map((_, i) => {
-            const x = i % currentLevelSnapshot.gridSize;
-            const y = Math.floor(i / currentLevelSnapshot.gridSize);
-            const isPlayer = playerPos.x === x && playerPos.y === y;
-            const isGoal =
-              currentLevelSnapshot.goal.x === x &&
-              currentLevelSnapshot.goal.y === y;
-            const obstacleEmoji = isObstacle(x, y);
+        <div className="grid-container">
+          {/* Top column labels */}
+          <div className="grid-labels-top">
+            {/* <div className="grid-label-spacer"></div> */}
+            {Array.from({ length: currentLevelSnapshot.gridSize }).map(
+              (_, x) => (
+                <div key={`col-${x}`} className="grid-label grid-label-top">
+                  {x}
+                </div>
+              )
+            )}
+          </div>
 
-            return (
-              <div
-                key={i}
-                className={`cell ${isPlayer ? "active" : ""} ${
-                  isPlayer && hasFailed ? "failed" : ""
-                } ${isPlayer && hasSucceeded ? "success" : ""}`}
-              >
-                {isPlayer
-                  ? currentLevelSnapshot.playerEmoji
-                  : isGoal
-                  ? currentLevelSnapshot.goalEmoji
-                  : obstacleEmoji || ""}
-              </div>
-            );
-          })}
+          <div className="grid-with-side-labels">
+            {/* Left side labels */}
+            <div className="grid-labels-left">
+              {Array.from({ length: currentLevelSnapshot.gridSize }).map(
+                (_, y) => (
+                  <div key={`row-${y}`} className="grid-label grid-label-left">
+                    {y}
+                  </div>
+                )
+              )}
+            </div>
+
+            {/* The actual game grid */}
+            <div
+              className="grid"
+              style={{
+                gridTemplateColumns: `repeat(${currentLevelSnapshot.gridSize}, 1fr)`,
+              }}
+            >
+              {Array.from({
+                length:
+                  currentLevelSnapshot.gridSize * currentLevelSnapshot.gridSize,
+              }).map((_, i) => {
+                const x = i % currentLevelSnapshot.gridSize;
+                const y = Math.floor(i / currentLevelSnapshot.gridSize);
+                const isPlayer = playerPos.x === x && playerPos.y === y;
+                const isGoal =
+                  currentLevelSnapshot.goal.x === x &&
+                  currentLevelSnapshot.goal.y === y;
+                const obstacleEmoji = isObstacle(x, y);
+
+                return (
+                  <div
+                    key={i}
+                    className={`cell ${isPlayer ? "active" : ""} ${
+                      isPlayer && hasFailed ? "failed" : ""
+                    } ${isPlayer && hasSucceeded ? "success" : ""}`}
+                  >
+                    {isPlayer
+                      ? currentLevelSnapshot.playerEmoji
+                      : isGoal
+                      ? currentLevelSnapshot.goalEmoji
+                      : obstacleEmoji || ""}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="controls">
@@ -541,7 +669,6 @@ export function GameRunner({
                           isSelected={i === selectedCommandIndex}
                           isRunning={isRunning}
                           onSelect={() => {
-                            console.log("+++++++++ select", i);
                             setSelectedCommandIndex(i);
                           }}
                           onRemove={() => removeCommand(i)}
@@ -594,40 +721,53 @@ export function GameRunner({
                 ➡️
               </button>
             </div>
+            {loopMode && (
+              <button
+                className="repeat-btn"
+                onClick={() => setShowRepeatModal(true)}
+                disabled={isRunning}
+              >
+                🔁 Repeat
+              </button>
+            )}
           </div>
 
           <div className="actions">
-            <button
-              className="run-btn"
-              onClick={() => runCode(false)}
-              disabled={isRunning || commands.length === 0}
-            >
-              ▶️ RUN
-            </button>
-            <button
-              className="reset-btn"
-              onClick={resetGame}
-              disabled={isRunning}
-            >
-              🔄 RESET
-            </button>
-            {level.isRandom && (
+            <div className="actions-primary">
               <button
-                className="next-btn"
-                onClick={handleNextLevel}
+                className="run-btn"
+                onClick={() => runCode(false)}
+                disabled={isRunning || commands.length === 0}
+              >
+                ▶️ RUN
+              </button>
+              <button
+                className="reset-btn"
+                onClick={resetGame}
                 disabled={isRunning}
               >
-                ⏭️ NEXT
+                🔄 RESET
               </button>
-            )}
+              {level.isRandom && (
+                <button
+                  className="next-btn"
+                  onClick={handleNextLevel}
+                  disabled={isRunning}
+                >
+                  ⏭️ NEXT
+                </button>
+              )}
+            </div>
             {onBack && (
-              <button
-                className="back-btn"
-                onClick={onBack}
-                disabled={isRunning}
-              >
-                ⬅️ BACK
-              </button>
+              <div className="actions-secondary">
+                <button
+                  className="back-btn"
+                  onClick={onBack}
+                  disabled={isRunning}
+                >
+                  ⬅️ BACK
+                </button>
+              </div>
             )}
           </div>
 
@@ -659,9 +799,15 @@ export function GameRunner({
         >
           <span className="history-toggle-icon">
             {isHistoryExpanded ? "▼" : "▲"}
+            {/* {isHistoryExpanded ? "▼" : "▲"} */}
           </span>
           <span className="history-toggle-text">
             📼 Replay History {history.length > 0 && `(${history.length})`}
+          </span>
+          <span
+            className={`history-toggle-icon ${isHistoryExpanded && "expanded"}`}
+          >
+            ▲{/* {isHistoryExpanded ? "▼" : "▲"} */}
           </span>
         </button>
 
@@ -695,7 +841,14 @@ export function GameRunner({
                       }
                     >
                       {entry.commands.map((cmd, i) => (
-                        <span key={i} className="history-command-emoji">
+                        <span
+                          key={i}
+                          className={`history-command-emoji ${
+                            entry.wastedIndexes.includes(i)
+                              ? "history-command-wasted"
+                              : ""
+                          }`}
+                        >
                           {getCommandEmoji(cmd)}
                         </span>
                       ))}
@@ -728,6 +881,92 @@ export function GameRunner({
           </div>
         )}
       </div>
+
+      {/* Repeat Modal */}
+      {showRepeatModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowRepeatModal(false)}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Create Repeat Block</h3>
+            <div className="modal-section">
+              <label>Repeat Count:</label>
+              <div className="repeat-count-selector">
+                {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                  <button
+                    key={num}
+                    className={`count-btn ${
+                      repeatCount === num ? "selected" : ""
+                    }`}
+                    onClick={() => setRepeatCount(num)}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="modal-section">
+              <label>Direction:</label>
+              <div className="repeat-direction-selector">
+                <button
+                  className={`dir-btn ${
+                    repeatDirection === "Up" ? "selected" : ""
+                  }`}
+                  onClick={() => setRepeatDirection("Up")}
+                >
+                  ⬆️ Up
+                </button>
+                <button
+                  className={`dir-btn ${
+                    repeatDirection === "Left" ? "selected" : ""
+                  }`}
+                  onClick={() => setRepeatDirection("Left")}
+                >
+                  ⬅️ Left
+                </button>
+                <button
+                  className={`dir-btn ${
+                    repeatDirection === "Down" ? "selected" : ""
+                  }`}
+                  onClick={() => setRepeatDirection("Down")}
+                >
+                  ⬇️ Down
+                </button>
+                <button
+                  className={`dir-btn ${
+                    repeatDirection === "Right" ? "selected" : ""
+                  }`}
+                  onClick={() => setRepeatDirection("Right")}
+                >
+                  ➡️ Right
+                </button>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button
+                className="modal-add-btn"
+                onClick={() => {
+                  addCommand({
+                    type: "Repeat",
+                    count: repeatCount,
+                    command: repeatDirection,
+                  });
+                  setShowRepeatModal(false);
+                }}
+              >
+                Add Repeat Block
+              </button>
+              <button
+                className="modal-cancel-btn"
+                onClick={() => setShowRepeatModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

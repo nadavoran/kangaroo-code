@@ -1,5 +1,6 @@
 export type Position = { x: number; y: number };
-export type Command = "Up" | "Down" | "Left" | "Right";
+export type Direction = "Up" | "Down" | "Left" | "Right";
+export type Command = Direction | { type: "Repeat"; count: number; command: Direction };
 
 export interface Obstacle {
   position: Position;
