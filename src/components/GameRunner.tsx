@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type {
   Command,
+  CommandItem,
   Direction,
   LevelConfig,
   Position,
@@ -39,6 +40,7 @@ interface SortableCommandItemProps {
   index: number;
   isExecuting: boolean;
   isWasted: boolean;
+  isFailed: boolean;
   isSelected: boolean;
   isRunning: boolean;
   onSelect: () => void;
@@ -51,6 +53,7 @@ function SortableCommandItem({
   command,
   isExecuting,
   isWasted,
+  isFailed,
   isSelected,
   isRunning,
   onSelect,
@@ -82,7 +85,7 @@ function SortableCommandItem({
       <span
         className={`command-emoji ${isExecuting ? "executing" : ""} ${
           isWasted ? "wasted" : ""
-        }`}
+        } ${isFailed ? "failed" : ""}`}
         {...listeners}
         onClick={() => {
           if (!isRunning && !isDragging) {
@@ -133,7 +136,7 @@ export function GameRunner({
   onNextLevel,
 }: GameRunnerProps) {
   const [playerPos, setPlayerPos] = useState<Position>(level.initialPlayer);
-  const [commands, setCommands] = useState<Command[]>([]);
+  const [commands, setCommands] = useState<CommandItem[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [message, setMessage] = useState("");
   const [currentCommandIndex, setCurrentCommandIndex] = useState<number>(-1);
@@ -141,14 +144,17 @@ export function GameRunner({
   const [hasSucceeded, setHasSucceeded] = useState(false);
   const [mistakes, setMistakes] = useState(0);
   const [wastedCommands, setWastedCommands] = useState<number[]>([]);
+  const [failedCommandId, setFailedCommandId] = useState<string>("");
   const [selectedCommandIndex, setSelectedCommandIndex] = useState<number>(-1);
   const [history, setHistory] = useState<
     Array<{
       id: number;
-      commands: Command[];
+      commands: CommandItem[];
       success: boolean;
       mistakes: number;
+      collectedTreats: number;
       wastedIndexes: number[];
+      failedId: string; // Id of command that caused failure
       timestamp: Date;
       obstacles?: typeof level.obstacles;
     }>
@@ -160,6 +166,11 @@ export function GameRunner({
   const [showRepeatModal, setShowRepeatModal] = useState(false);
   const [repeatCount, setRepeatCount] = useState(2);
   const [repeatDirection, setRepeatDirection] = useState<Direction>("Right");
+  const [totalTreats, setTotalTreats] = useState(0);
+  const [currentRunTreats, setCurrentRunTreats] = useState(0);
+  const [collectedPositions, setCollectedPositions] = useState<Set<string>>(
+    new Set()
+  );
 
   // Reset game when level changes (for HMR support)
   useEffect(() => {
@@ -185,7 +196,11 @@ export function GameRunner({
         setSelectedCommandIndex(-1);
       } else if (commands.length < level.maxCommands) {
         // Otherwise add new command
-        setCommands([...commands, cmd]);
+        const newCmdItem: CommandItem = {
+          id: `cmd-${Date.now()}-${commands.length}`,
+          command: cmd,
+        };
+        setCommands([...commands, newCmdItem]);
       }
     }
   };
@@ -199,7 +214,10 @@ export function GameRunner({
   const replaceCommand = (index: number, newCmd: Command) => {
     if (!isRunning) {
       const newCommands = [...commands];
-      newCommands[index] = newCmd;
+      newCommands[index] = {
+        ...newCommands[index],
+        command: newCmd,
+      };
       setCommands(newCommands);
     }
   };
@@ -214,7 +232,10 @@ export function GameRunner({
     setHasSucceeded(false);
     setMistakes(0);
     setWastedCommands([]);
+    setFailedCommandId("");
     setSelectedCommandIndex(-1);
+    setCurrentRunTreats(0);
+    setCollectedPositions(new Set());
   };
 
   const checkCollision = (x: number, y: number): boolean => {
@@ -222,6 +243,22 @@ export function GameRunner({
     return currentLevelSnapshot.obstacles.some(
       (obstacle) => obstacle.position.x === x && obstacle.position.y === y
     );
+  };
+
+  const checkCollectible = (
+    x: number,
+    y: number
+  ): { type: "water" | "treat"; emoji: string } | null => {
+    if (!currentLevelSnapshot.collectibles) return null;
+    const posKey = `${x},${y}`;
+    if (collectedPositions.has(posKey)) return null; // Already collected
+
+    const collectible = currentLevelSnapshot.collectibles.find(
+      (c) => c.position.x === x && c.position.y === y
+    );
+    return collectible
+      ? { type: collectible.type, emoji: collectible.emoji }
+      : null;
   };
 
   const runCode = async (skipHistory = false) => {
@@ -232,6 +269,7 @@ export function GameRunner({
     setCurrentCommandIndex(-1);
     setMistakes(0);
     setWastedCommands([]);
+    setFailedCommandId("");
 
     // Use a local position variable to track movement during the loop
     let currentX = level.initialPlayer.x;
@@ -244,7 +282,8 @@ export function GameRunner({
     await new Promise((r) => setTimeout(r, 500));
 
     for (let i = 0; i < commands.length; i++) {
-      const cmd = commands[i];
+      const cmdItem = commands[i];
+      const cmd = cmdItem.command;
       setCurrentCommandIndex(i);
 
       // Handle repeat commands
@@ -284,6 +323,7 @@ export function GameRunner({
             setMessage("Oops! Hit an obstacle! Try again. 💥");
             setHasFailed(true);
             setIsRunning(false);
+            setFailedCommandId(cmdItem.id);
             setCurrentCommandIndex(-1);
             setMistakes(mistakeCount);
             setWastedCommands(wastedIndexes);
@@ -295,7 +335,9 @@ export function GameRunner({
                   commands: [...commands],
                   success: false,
                   mistakes: mistakeCount,
+                  collectedTreats: currentRunTreats,
                   wastedIndexes: [...wastedIndexes],
+                  failedId: cmdItem.id,
                   timestamp: new Date(),
                   obstacles: currentLevelSnapshot.obstacles
                     ? JSON.parse(JSON.stringify(currentLevelSnapshot.obstacles))
@@ -309,6 +351,15 @@ export function GameRunner({
 
           currentX = nextX;
           currentY = nextY;
+
+          // Check for collectibles after moving
+          const collectible = checkCollectible(currentX, currentY);
+          if (collectible && collectible.type === "treat") {
+            const posKey = `${currentX},${currentY}`;
+            setCollectedPositions((prev) => new Set(prev).add(posKey));
+            setCurrentRunTreats((prev) => prev + 1);
+          }
+
           setPlayerPos({ x: currentX, y: currentY });
           await new Promise((r) => setTimeout(r, 500));
         }
@@ -339,11 +390,12 @@ export function GameRunner({
           setMessage("Oops! Hit an obstacle! Try again. 💥");
           setHasFailed(true);
           setIsRunning(false);
+          setFailedCommandId(cmdItem.id);
           setCurrentCommandIndex(-1);
           setMistakes(mistakeCount);
           setWastedCommands(wastedIndexes);
 
-          // Add to history when hitting obstacle
+          // Add to history when hitting obstacle (from regular command)
           if (!skipHistory) {
             setHistory((prev) => [
               {
@@ -351,7 +403,9 @@ export function GameRunner({
                 commands: [...commands],
                 success: false,
                 mistakes: mistakeCount,
+                collectedTreats: currentRunTreats,
                 wastedIndexes: [...wastedIndexes],
+                failedId: cmdItem.id,
                 timestamp: new Date(),
                 obstacles: currentLevelSnapshot.obstacles
                   ? JSON.parse(JSON.stringify(currentLevelSnapshot.obstacles))
@@ -365,6 +419,14 @@ export function GameRunner({
 
         currentX = nextX;
         currentY = nextY;
+
+        // Check for collectibles after moving
+        const collectible = checkCollectible(currentX, currentY);
+        if (collectible && collectible.type === "treat") {
+          const posKey = `${currentX},${currentY}`;
+          setCollectedPositions((prev) => new Set(prev).add(posKey));
+          setCurrentRunTreats((prev) => prev + 1);
+        }
 
         setPlayerPos({ x: currentX, y: currentY });
         await new Promise((r) => setTimeout(r, 500));
@@ -381,10 +443,21 @@ export function GameRunner({
 
     if (success) {
       setHasSucceeded(true);
-      const scoreMessage =
-        mistakeCount === 0
-          ? `${level.successMessage} Perfect! No mistakes! ⭐`
-          : `${level.successMessage} Mistakes: ${mistakeCount}`;
+
+      // Add collected treats to total
+      setTotalTreats((prev) => prev + currentRunTreats);
+
+      // Build success message with treats
+      let scoreMessage = level.successMessage;
+      if (mistakeCount === 0) {
+        scoreMessage += " Perfect! No mistakes! ⭐";
+      } else {
+        scoreMessage += ` Mistakes: ${mistakeCount}`;
+      }
+      if (currentRunTreats > 0) {
+        scoreMessage += ` | Treats collected: ${currentRunTreats} 🍪`;
+      }
+
       setMessage(scoreMessage);
       if (onLevelComplete) {
         setTimeout(() => onLevelComplete(), 1500);
@@ -402,7 +475,9 @@ export function GameRunner({
           commands: [...commands],
           success,
           mistakes: mistakeCount,
+          collectedTreats: currentRunTreats,
           wastedIndexes: [...wastedIndexes],
+          failedId: "",
           timestamp: new Date(),
           obstacles: currentLevelSnapshot.obstacles
             ? JSON.parse(JSON.stringify(currentLevelSnapshot.obstacles))
@@ -455,8 +530,18 @@ export function GameRunner({
     return obstacle ? obstacle.emoji : null;
   };
 
+  const getCollectibleEmoji = (x: number, y: number): string | null => {
+    if (!currentLevelSnapshot.collectibles) return null;
+    const posKey = `${x},${y}`;
+    if (collectedPositions.has(posKey)) return null; // Already collected
+    const collectible = currentLevelSnapshot.collectibles.find(
+      (c) => c.position.x === x && c.position.y === y
+    );
+    return collectible ? collectible.emoji : null;
+  };
+
   const replayFromHistory = (
-    historyCommands: Command[],
+    historyCommands: CommandItem[],
     historyObstacles?: typeof level.obstacles
   ) => {
     if (isRunning) return;
@@ -479,7 +564,7 @@ export function GameRunner({
   };
 
   const playFromHistory = async (
-    historyCommands: Command[],
+    historyCommands: CommandItem[],
     historyObstacles: typeof level.obstacles | undefined,
     event: React.MouseEvent
   ) => {
@@ -549,9 +634,7 @@ export function GameRunner({
 
     // Check if dropped on trash zone
     if (over.id === "trash-zone") {
-      const indexToRemove = commands.findIndex(
-        (_, i) => `command-${i}` === active.id
-      );
+      const indexToRemove = commands.findIndex((c) => c.id === active.id);
       if (indexToRemove !== -1) {
         setCommands(commands.filter((_, i) => i !== indexToRemove));
       }
@@ -560,10 +643,8 @@ export function GameRunner({
 
     // Reorder commands if dropped on another command
     if (active.id !== over.id) {
-      const oldIndex = commands.findIndex(
-        (_, i) => `command-${i}` === active.id
-      );
-      const newIndex = commands.findIndex((_, i) => `command-${i}` === over.id);
+      const oldIndex = commands.findIndex((c) => c.id === active.id);
+      const newIndex = commands.findIndex((c) => c.id === over.id);
       const newArray = arrayMove(commands, oldIndex, newIndex);
       setCommands(newArray);
     }
@@ -618,6 +699,7 @@ export function GameRunner({
                   currentLevelSnapshot.goal.x === x &&
                   currentLevelSnapshot.goal.y === y;
                 const obstacleEmoji = isObstacle(x, y);
+                const collectibleEmoji = getCollectibleEmoji(x, y);
 
                 return (
                   <div
@@ -630,7 +712,7 @@ export function GameRunner({
                       ? currentLevelSnapshot.playerEmoji
                       : isGoal
                       ? currentLevelSnapshot.goalEmoji
-                      : obstacleEmoji || ""}
+                      : obstacleEmoji || collectibleEmoji || ""}
                   </div>
                 );
               })}
@@ -655,17 +737,19 @@ export function GameRunner({
                     <span className="command-placeholder">Add commands...</span>
                   ) : (
                     <SortableContext
-                      items={commands.map((_, i) => `command-${i}`)}
+                      items={commands.map((c) => c.id)}
                       strategy={horizontalListSortingStrategy}
                     >
                       {commands.map((c, i) => (
+                        // This is a forced re-write to clear any cache or lingering state
                         <SortableCommandItem
-                          key={`command-${i}`}
-                          id={`command-${i}`}
-                          command={c}
+                          key={c.id}
+                          id={c.id}
+                          command={c.command}
                           index={i}
                           isExecuting={i === currentCommandIndex}
                           isWasted={wastedCommands.includes(i)}
+                          isFailed={c.id === failedCommandId}
                           isSelected={i === selectedCommandIndex}
                           isRunning={isRunning}
                           onSelect={() => {
@@ -757,7 +841,7 @@ export function GameRunner({
                   ⬅️ BACK
                 </button>
               )}
-              {level.isRandom && (
+              {(level.isRandom || level.allowRandomize) && (
                 <button
                   className="next-btn"
                   onClick={handleNextLevel}
@@ -770,15 +854,25 @@ export function GameRunner({
           </div>
 
           {message && <div className="message">{flipKangaroos(message)}</div>}
-          {!isRunning && mistakes > 0 && (
+          {!isRunning && (mistakes > 0 || totalTreats > 0) && (
             <div className="score-display">
-              <p className="score-label">📊 Score</p>
-              <p className="score-mistakes">
-                Mistakes: <span className="mistake-count">{mistakes}</span>
-              </p>
-              <p className="score-hint">
-                Red arrows show actions that had no effect
-              </p>
+              <p className="score-label">📊 Stats</p>
+              {mistakes > 0 && (
+                <>
+                  <p className="score-mistakes">
+                    Mistakes: <span className="mistake-count">{mistakes}</span>
+                  </p>
+                  <p className="score-hint">
+                    Red arrows show actions that had no effect
+                  </p>
+                </>
+              )}
+              {totalTreats > 0 && (
+                <p className="score-treats">
+                  Total Treats:{" "}
+                  <span className="treat-count">🍪 {totalTreats}</span>
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -840,14 +934,18 @@ export function GameRunner({
                     >
                       {entry.commands.map((cmd, i) => (
                         <span
-                          key={i}
+                          key={"history-" + cmd.id}
                           className={`history-command-emoji ${
                             entry.wastedIndexes.includes(i)
                               ? "history-command-wasted"
                               : ""
+                          } ${
+                            entry.failedId === cmd.id
+                              ? "history-command-failed"
+                              : ""
                           }`}
                         >
-                          {getCommandEmoji(cmd)}
+                          {getCommandEmoji(cmd.command)}
                         </span>
                       ))}
                     </div>
@@ -856,9 +954,14 @@ export function GameRunner({
                         <span className="history-stat">
                           {entry.commands.length} commands
                         </span>
-                        {entry.mistakes > 0 && (
+                        {!!entry.mistakes && (
                           <span className="history-mistakes">
                             {entry.mistakes} mistakes
+                          </span>
+                        )}
+                        {!!entry.collectedTreats && (
+                          <span className="history-treats">
+                            {entry.collectedTreats} treats
                           </span>
                         )}
                       </div>

@@ -21,6 +21,7 @@ Instead of moving the Kangaroo directly with a joystick, players must **write a 
 - **Optimization:** Finding the most efficient path with the fewest commands
 - **Pattern Recognition:** Understanding repeatable strategies across different puzzles
 - **Loops (Optional):** Introducing repetition with the Repeat block feature
+- **Collectibles:** Gathering treats (cookies, fruit) for extra points and rewards
 
 ---
 
@@ -40,12 +41,14 @@ Instead of moving the Kangaroo directly with a joystick, players must **write a 
    - **Drag to trash** 🗑️ or click the remove (×) button to delete
 5. **Avoid Obstacles:** Make sure your path doesn't land on obstacles
 6. **Run the Code:** Press the large **▶️ RUN** button and watch the Kangaroo execute your instructions
-7. **Review Results:** 
-   - ✅ Success: You reached the goal!
-   - ❌ Failed: Hit an obstacle or missed the goal
-   - Red-highlighted commands show wasted moves (in both command list and history)
-8. **Iterate:** Press **🔄 RESET** to clear your commands and try again
-9. **Navigate:** Press **⬅️ BACK** to return to level selection (uses browser back button)
+7. **Collect Treats:** Try to hop onto squares with treats (🍪, 🍎, 🥕, etc.) to collect them!
+8. **Review Results:** 
+  - ✅ Success: You reached the goal!
+  - ❌ Failed: Hit an obstacle or missed the goal
+  - Total treats collected are shown in the results and stats panel
+  - Red-highlighted commands show wasted moves (in both command list and history)
+9. **Iterate:** Press **🔄 RESET** to clear your commands and try again
+10. **Navigate:** Press **⬅️ BACK** to return to level selection (uses browser back button)
 
 ---
 
@@ -53,8 +56,10 @@ Instead of moving the Kangaroo directly with a joystick, players must **write a 
 
 ### 🎯 Core Features
 - 🦘 **7 Progressive Levels** - From simple to complex challenges
+- 🍪 **Collectibles** - Randomly generated treats for extra engagement
 - 🔁 **Loop Mode** - Optional repeat blocks for advanced learning
 - 📊 **History Panel** - Track all attempts with full replay capability
+- 📊 **Stats Section** - View total treats and performance metrics
 - 🗑️ **Drag to Delete** - Intuitive trash zone for removing commands
 - 📍 **Grid Coordinates** - Chess-board style numbering system
 - 🔄 **Random Levels** - Infinite practice with procedural generation
@@ -86,8 +91,9 @@ Instead of moving the Kangaroo directly with a joystick, players must **write a 
 
 4. **Level 4 - Random Simple** 🌟
    - 5×5 grid with 1-2 random obstacles
-   - **New layout every time** - click "NEXT" for a fresh challenge
-   - Guaranteed solvable
+  - **New layout every time** - click "NEXT" for a fresh challenge
+  - **Procedural Treats** - Random collectibles generated for every run
+  - Guaranteed solvable
 
 5. **Level 5 - Random Easy** 🎲
    - 5×5 grid with 3-5 random obstacles
@@ -137,15 +143,18 @@ Instead of moving the Kangaroo directly with a joystick, players must **write a 
 
 #### Scoring & History
 - **Score Tracking:** Counts mistakes (wasted moves that had no effect)
+- **Treat Collection:** Tracks total treats gathered across successful runs
+- **Stats Panel:** Displays both mistakes and collected treats after each run
 - **Replay History Panel:** 
-  - Collapsible bottom drawer (mobile) or side panel (desktop)
-  - All attempts saved with timestamp
-  - Success/failure indicators (✅/❌)
-  - Shows exact commands used
-  - **Wasted commands highlighted** in red in history
-  - Click to load previous attempt
-  - Click "▶️ Play" to watch automatic replay
-  - History preserves exact obstacle layouts for random levels
+ - Collapsible bottom drawer (mobile) or side panel (desktop)
+ - All attempts saved with timestamp
+ - Success/failure indicators (✅/❌)
+ - Shows exact commands used
+ - **Treat count preserved** in history for each attempt
+ - **Wasted commands highlighted** in red in history
+ - Click to load previous attempt
+ - Click "▶️ Play" to watch automatic replay
+ - History preserves exact obstacle and treat layouts for random levels
 
 #### Navigation
 - **Browser Back Button Support:** Navigate back from levels using browser/device back button
@@ -155,10 +164,11 @@ Instead of moving the Kangaroo directly with a joystick, players must **write a 
 ### 🔄 Random Level Generation
 
 - Levels 4-7 feature **procedurally generated layouts**
+- **Procedural Treats:** Collectibles are automatically placed in reachable positions
 - Click **⏭️ NEXT** button to get a new random layout
 - **Path Validation:** Every generated board is guaranteed to have at least one valid solution
 - **BFS Algorithm:** Uses Breadth-First Search to verify solvability before presenting the puzzle
-- History preserves each unique layout for replay
+- History preserves each unique layout (including obstacles and treats) for replay
 
 ---
 
@@ -371,10 +381,13 @@ export const level8 = (): LevelConfig => ({
   playerEmoji: "🦘",
   goalEmoji: "🎁",
   obstacles: [
-    { position: { x: 2, y: 2 }, emoji: "🌳", type: "tree" },
-    // Add more obstacles...
-  ],
-  maxCommands: 10,
+   { position: { x: 2, y: 2 }, emoji: "🌳", type: "tree" },
+   // Add more obstacles...
+ ],
+ collectibles: [
+   { position: { x: 1, y: 1 }, emoji: "🍪", type: "treat" },
+ ],
+ maxCommands: 10,
   successMessage: "Amazing! You did it! 🎉",
   failMessage: "Try again! 🦘",
   isRandom: false, // Set to true for random generation

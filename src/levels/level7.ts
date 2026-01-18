@@ -1,5 +1,6 @@
 import type { LevelConfig, Obstacle } from "../types/game.types";
 import { hasPath } from "../utils/pathfinding";
+import { generateRandomTreats } from "../utils/generateTreats";
 
 export const level7 = (): LevelConfig => {
   // Complex random layout - random grid size 6-8, with complex patterns
@@ -166,9 +167,11 @@ export const level7 = (): LevelConfig => {
     playerEmoji: "🦘",
     goalEmoji: "💎",
     obstacles,
+    collectibles: generateRandomTreats(gridSize, start, goal, obstacles),
     maxCommands,
     successMessage: "AMAZING! You're a coding master! 🏅🎉",
     failMessage: "This one's tough! Keep trying! 🦘💪",
     isRandom: true,
+    enableTreats: true,
   };
 };

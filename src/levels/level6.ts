@@ -1,5 +1,6 @@
 import type { LevelConfig, Obstacle } from "../types/game.types";
 import { hasPath } from "../utils/pathfinding";
+import { generateRandomTreats } from "../utils/generateTreats";
 
 export const level6 = (): LevelConfig => {
   // Mid complexity random layout - random grid size 5-7, with patterns
@@ -97,9 +98,11 @@ export const level6 = (): LevelConfig => {
     playerEmoji: "🦘",
     goalEmoji: "🏆",
     obstacles,
+    collectibles: generateRandomTreats(gridSize, start, goal, obstacles),
     maxCommands,
     successMessage: "Excellent! You conquered the medium maze! 🎉",
     failMessage: "Tricky maze! Give it another go! 🦘",
     isRandom: true,
+    enableTreats: true,
   };
 };

@@ -1,5 +1,6 @@
 import type { LevelConfig, Obstacle } from "../types/game.types";
 import { hasPath } from "../utils/pathfinding";
+import { generateRandomTreats } from "../utils/generateTreats";
 
 export const level5 = (): LevelConfig => {
   // Simple random layout - 3-5 obstacles
@@ -55,9 +56,11 @@ export const level5 = (): LevelConfig => {
     playerEmoji: "🦘",
     goalEmoji: "🎯",
     obstacles,
+    collectibles: generateRandomTreats(gridSize, start, goal, obstacles),
     maxCommands: 12,
     successMessage: "Nice work! You navigated the random course! 🎉",
     failMessage: "Oops! Try a different path! 🦘",
     isRandom: true,
+    enableTreats: true,
   };
 };

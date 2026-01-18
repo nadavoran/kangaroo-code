@@ -117,8 +117,9 @@ function App() {
                 checked={loopModeEnabled}
                 onChange={(e) => setLoopModeEnabled(e.target.checked)}
               />
-              <span className="toggle-slider">
-                <span className="toggle-icon">{loopModeEnabled ? "🔁" : "➡️"}</span>
+              <span className="toggle-slider"></span>
+              <span className="toggle-icon">
+                {loopModeEnabled ? "🔁" : "➡️"}
               </span>
             </label>
           </div>
